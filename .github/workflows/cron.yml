@@ -1,0 +1,24 @@
+name: Pobierz dane SwitchBot
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Uruchamia się co 15 minut
+  workflow_dispatch: # Pozwala uruchomić ręcznie jednym kliknięciem
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - env:
+          SB_TOKEN: ${{ secrets.SB_TOKEN }}
+          SB_SECRET: ${{ secrets.SB_SECRET }}
+          ID_1: ${{ secrets.ID_1 }}
+          ID_2: ${{ secrets.ID_2 }}
+          ID_3: ${{ secrets.ID_3 }}
+          GSHEET_URL: ${{ secrets.GSHEET_URL }}
+        run: python fetch.py
