@@ -24,24 +24,23 @@ def get_headers():
         "Content-Type": "application/json; charset=utf8"
     }
 
-if not all([TOKEN, SECRET, GSHEET_URL]) or not all(IDS):
-    print("Błąd: Brakuje wymaganych zmiennych w Secrets.")
-    exit(1)
-
 payload = {}
 for idx, dev_id in enumerate(IDS, start=1):
+    time.sleep(1) # 1 sekunda przerwy, aby nie przekroczyć limitu zapytań na sekundę
     try:
-        res = requests.get(f"{BASE_URL}/{dev_id}/status", headers=get_headers()).json()
+        resp = requests.get(f"{BASE_URL}/{dev_id}/status", headers=get_headers())
+        res = resp.json()
+        print(f"Czujnik {idx} -> HTTP: {resp.status_code}, API: {res.get('statusCode')} ({res.get('message')})")
         if res.get("statusCode") == 100:
             payload[f"t{idx}"] = res["body"].get("temperature")
             payload[f"h{idx}"] = res["body"].get("humidity")
         else:
             payload[f"t{idx}"] = None
             payload[f"h{idx}"] = None
-    except Exception:
+    except Exception as e:
+        print(f"Czujnik {idx} -> Błąd: {type(e).__name__}")
         payload[f"t{idx}"] = None
         payload[f"h{idx}"] = None
 
-print("Wysyłany payload:", payload)
 r = requests.post(GSHEET_URL, json=payload)
-print("Status wysyłki:", r.status_code)
+print("Status Google Sheets:", r.status_code)
