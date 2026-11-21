@@ -9,7 +9,7 @@ IDS = [
     os.environ.get("ID_3", "").strip()
 ]
 
-BASE_URL = "https://" + "api.switch-bot.com" + "/v1.1/devices"
+BASE_URL = "https://" + "://switch-bot.com" + "/v1.1/devices"
 
 def get_headers():
     t = str(int(round(time.time() * 1000)))
@@ -24,19 +24,13 @@ def get_headers():
         "Content-Type": "application/json; charset=utf8"
     }
 
-resp = requests.get(BASE_URL, headers=get_headers())
-print("Status HTTP:", resp.status_code)
+if not all([TOKEN, SECRET, GSHEET_URL]) or not all(IDS):
+    print("Błąd: Brakuje wymaganych zmiennych w Secrets.")
+    exit(1)
 
-devs = resp.json()
-if devs.get("statusCode") == 100:
-    for d in devs["body"]["deviceList"]:
-        print(f"Urządzenie: {d.get('deviceName')} | Typ: {d.get('deviceType')} | ID: {d.get('deviceId')}")
-else:
-    print("Błąd API SwitchBot:", devs)
-
-if all(IDS) and GSHEET_URL:
-    payload = {}
-    for idx, dev_id in enumerate(IDS, start=1):
+payload = {}
+for idx, dev_id in enumerate(IDS, start=1):
+    try:
         res = requests.get(f"{BASE_URL}/{dev_id}/status", headers=get_headers()).json()
         if res.get("statusCode") == 100:
             payload[f"t{idx}"] = res["body"].get("temperature")
@@ -44,5 +38,9 @@ if all(IDS) and GSHEET_URL:
         else:
             payload[f"t{idx}"] = None
             payload[f"h{idx}"] = None
-    r = requests.post(GSHEET_URL, json=payload)
-    print("Status wysyłki do Google Sheets:", r.status_code, r.text)
+    except Exception:
+        payload[f"t{idx}"] = None
+        payload[f"h{idx}"] = None
+
+r = requests.post(GSHEET_URL, json=payload)
+print("Status wysyłki:", r.status_code)
