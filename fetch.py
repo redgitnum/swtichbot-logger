@@ -9,7 +9,7 @@ IDS = [
     os.environ.get("ID_3", "").strip()
 ]
 
-BASE_URL = "https://" + "://switch-bot.com" + "/v1.1/devices"
+BASE_URL = "https://" + "api.switch-bot.com" + "/v1.1/devices"
 
 def get_headers():
     t = str(int(round(time.time() * 1000)))
@@ -24,23 +24,25 @@ def get_headers():
         "Content-Type": "application/json; charset=utf8"
     }
 
-payload = {}
-for idx, dev_id in enumerate(IDS, start=1):
-    time.sleep(1) # 1 sekunda przerwy, aby nie przekroczyć limitu zapytań na sekundę
-    try:
-        resp = requests.get(f"{BASE_URL}/{dev_id}/status", headers=get_headers())
-        res = resp.json()
-        print(f"Czujnik {idx} -> HTTP: {resp.status_code}, API: {res.get('statusCode')} ({res.get('message')})")
+resp = requests.get(BASE_URL, headers=get_headers())
+print("Status HTTP:", resp.status_code)
+
+devs = resp.json()
+if devs.get("statusCode") == 100:
+    for d in devs["body"]["deviceList"]:
+        print(f"Urządzenie: {d.get('deviceName')} | Typ: {d.get('deviceType')} | ID: {d.get('deviceId')}")
+else:
+    print("Błąd API SwitchBot:", devs)
+
+if all(IDS) and GSHEET_URL:
+    payload = {}
+    for idx, dev_id in enumerate(IDS, start=1):
+        res = requests.get(f"{BASE_URL}/{dev_id}/status", headers=get_headers()).json()
         if res.get("statusCode") == 100:
             payload[f"t{idx}"] = res["body"].get("temperature")
             payload[f"h{idx}"] = res["body"].get("humidity")
         else:
             payload[f"t{idx}"] = None
             payload[f"h{idx}"] = None
-    except Exception as e:
-        print(f"Czujnik {idx} -> Błąd: {type(e).__name__}")
-        payload[f"t{idx}"] = None
-        payload[f"h{idx}"] = None
-
-r = requests.post(GSHEET_URL, json=payload)
-print("Status Google Sheets:", r.status_code)
+    r = requests.post(GSHEET_URL, json=payload)
+    print("Status wysyłki do Google Sheets:", r.status_code, r.text)
