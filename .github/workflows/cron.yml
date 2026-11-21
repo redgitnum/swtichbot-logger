@@ -1,8 +1,6 @@
 name: Pobierz dane SwitchBot
 
 on:
-  schedule:
-    - cron: '*/5 * * * *' # Uruchamia się co 5 minut
   workflow_dispatch: # Pozwala uruchomić ręcznie jednym kliknięciem
 
 jobs:
