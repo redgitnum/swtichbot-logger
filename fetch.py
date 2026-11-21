@@ -42,5 +42,6 @@ for idx, dev_id in enumerate(IDS, start=1):
         payload[f"t{idx}"] = None
         payload[f"h{idx}"] = None
 
+print("Wysyłany payload:", payload)
 r = requests.post(GSHEET_URL, json=payload)
 print("Status wysyłki:", r.status_code)
