@@ -27,13 +27,6 @@ def get_headers():
 resp = requests.get(BASE_URL, headers=get_headers())
 print("Status HTTP:", resp.status_code)
 
-devs = resp.json()
-if devs.get("statusCode") == 100:
-    for d in devs["body"]["deviceList"]:
-        print(f"Urządzenie: {d.get('deviceName')} | Typ: {d.get('deviceType')} | ID: {d.get('deviceId')}")
-else:
-    print("Błąd API SwitchBot:", devs)
-
 if all(IDS) and GSHEET_URL:
     payload = {}
     for idx, dev_id in enumerate(IDS, start=1):
