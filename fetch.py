@@ -1,9 +1,15 @@
 import os, time, uuid, hmac, hashlib, base64, requests
 
-TOKEN = os.environ["SB_TOKEN"]
-SECRET = os.environ["SB_SECRET"]
-GSHEET_URL = os.environ.get("GSHEET_URL", "")
-IDS = [os.environ.get("ID_1"), os.environ.get("ID_2"), os.environ.get("ID_3")]
+TOKEN = os.environ.get("SB_TOKEN", "").strip()
+SECRET = os.environ.get("SB_SECRET", "").strip()
+GSHEET_URL = os.environ.get("GSHEET_URL", "").strip()
+IDS = [
+    os.environ.get("ID_1", "").strip(),
+    os.environ.get("ID_2", "").strip(),
+    os.environ.get("ID_3", "").strip()
+]
+
+BASE_URL = "https://" + "api.switch-bot.com" + "/v1.1/devices"
 
 def get_headers():
     t = str(int(round(time.time() * 1000)))
@@ -18,17 +24,20 @@ def get_headers():
         "Content-Type": "application/json; charset=utf8"
     }
 
-# Wypisz listę urządzeń w logach (pomocne przy pierwszym uruchomieniu)
-devs = requests.get("https://switch-bot.com", headers=get_headers()).json()
+resp = requests.get(BASE_URL, headers=get_headers())
+print("Status HTTP:", resp.status_code)
+
+devs = resp.json()
 if devs.get("statusCode") == 100:
     for d in devs["body"]["deviceList"]:
         print(f"Urządzenie: {d.get('deviceName')} | Typ: {d.get('deviceType')} | ID: {d.get('deviceId')}")
+else:
+    print("Błąd API SwitchBot:", devs)
 
-# Pobierz odczyty z 3 czujników i wyślij do Google Sheets
 if all(IDS) and GSHEET_URL:
     payload = {}
     for idx, dev_id in enumerate(IDS, start=1):
-        res = requests.get(f"https://switch-bot.com/{dev_id}/status", headers=get_headers()).json()
+        res = requests.get(f"{BASE_URL}/{dev_id}/status", headers=get_headers()).json()
         if res.get("statusCode") == 100:
             payload[f"t{idx}"] = res["body"].get("temperature")
             payload[f"h{idx}"] = res["body"].get("humidity")
